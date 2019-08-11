@@ -1,38 +1,51 @@
 #!/usr/bin/env ruby
-require "ftools"
-require "time"
+%w(ftools time).each{|rq| require rq}
+
+numlogs = 0; datelogs = 0
 
 start = Time.now()
-
-iChatLogsDir = File.expand_path("~/Documents/iChats")
+iChatLogsDir = File.expand_path("~/Documents/iChats-test")
 
 def moveLog(filename, dir)
-  if !File.exist?(dir)
-    File.makedirs dir
+  unless dir == nil
+    if !File.exist?(dir)
+      File.makedirs(dir)
+    end
+    File.move(filename, dir)
   end
-  File.move(filename, dir)
 end
 
 Dir.chdir(iChatLogsDir)
-Dir.new(iChatLogsDir).each {
-  |log| 
-      if log.to_s.match(/chat$/)
-        puts log
-        /([12][09]\d\d-[01]\d-[0123]\d)/.match(log)
-        moveLog(log, $1)
-      end
+Dir.new(iChatLogsDir).each {|log| 
+   
+if log.to_s.match(/chat$/)
+  log.match(/([12][09]\d\d-[01]\d-[0-3]\d)/).to_s
+  moveLog(log, $1)
+  datelogs += 1
+end
 }
-puts "Dated logs finished."
+if datelogs > 0
+  puts "#{datelogs} dated logs sorted."
+else
+  puts "Dated logs are already sorted."
+end
 
-Dir.new(iChatLogsDir).each {
-  |log|
-      if log.to_s.match(/chat$/)
-        /([12][09]\d\d-[01]\d-[0123]\d)/.match(`/usr/bin/mdls -name kMDItemFSCreationDate "#{File.expand_path(log)}"`)
-        moveLog(log, $1)
-      end
+Dir.new(iChatLogsDir).each {|log|
+if log.to_s.match(/chat$/)
+  `/usr/bin/mdls -name kMDItemFSCreationDate "#{File.expand_path(log)}"`.match(/([12][09]\d\d-[01]\d-[0-3]\d)/).to_s
+  moveLog(log, $1)
+  numlogs += 1
+end
 }
 timediff = Time.now() - start
 
-puts "Numbered logs finished."
-puts "iChat logs are now organized."
-puts "Completed in #{timediff} seconds."
+if datelogs > 0
+  puts "#{numlogs} numbered logs sorted."
+else
+  puts "Numbered logs are already sorted."
+end
+
+if (datelogs + numlogs > 0)
+  puts "iChat logs are now organized."
+  puts "Completed in #{timediff} seconds."
+end
